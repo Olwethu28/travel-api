@@ -55,13 +55,34 @@ class ReviewSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        if self.instance:
+            destination = data.get(
+                "destination",
+                self.instance.destination,
+            )
+            accommodation = data.get(
+                "accommodation",
+                self.instance.accommodation,
+            )
+            activity = data.get(
+                "activity",
+                self.instance.activity,
+            )
+        else:
+            destination = data.get("destination")
+            accommodation = data.get("accommodation")
+            activity = data.get("activity")
+
         targets = [
-            data.get("destination"),
-            data.get("accommodation"),
-            data.get("activity"),
+            destination,
+            accommodation,
+            activity,
         ]
 
-        target_count = sum(target is not None for target in targets)
+        target_count = sum(
+            target is not None
+            for target in targets
+        )
 
         if target_count != 1:
             raise serializers.ValidationError(
