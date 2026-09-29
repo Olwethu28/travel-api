@@ -1,17 +1,13 @@
-from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 
-from .views import DestinationViewSet
+from .views import DestinationSearchView
 
-
-router = DefaultRouter()
-
-router.register(
-    "destinations",
-    DestinationViewSet,
-    basename="destination",
-)
+app_name = "destinations"
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path(
+        "search/",
+        DestinationSearchView.as_view(),
+        name="search",
+    ),
 ]
