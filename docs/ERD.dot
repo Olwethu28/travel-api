@@ -1,0 +1,152 @@
+digraph ERD {
+  graph [rankdir=LR, splines=ortho, nodesep=0.65, ranksep=1.15, bgcolor="white", pad=0.3];
+  node [shape=plain, fontname="Arial"];
+  edge [color="#555555", fontname="Arial", fontsize=9, arrowsize=0.7];
+
+  USER [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#D9EAF7"><B>USER</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR>
+      <TR><TD ALIGN="LEFT">username</TD></TR><TR><TD ALIGN="LEFT">email</TD></TR>
+      <TR><TD ALIGN="LEFT">first_name / last_name</TD></TR><TR><TD ALIGN="LEFT">role</TD></TR>
+      <TR><TD ALIGN="LEFT">is_active</TD></TR><TR><TD ALIGN="LEFT">created_at / updated_at</TD></TR>
+    </TABLE>>];
+
+  DESTINATION [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#DFF0D8"><B>DESTINATION</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT">name</TD></TR>
+      <TR><TD ALIGN="LEFT">country</TD></TR><TR><TD ALIGN="LEFT">category</TD></TR>
+      <TR><TD ALIGN="LEFT">climate</TD></TR><TR><TD ALIGN="LEFT">best_time_to_visit</TD></TR>
+      <TR><TD ALIGN="LEFT">avg_daily_cost</TD></TR><TR><TD ALIGN="LEFT">image</TD></TR>
+      <TR><TD ALIGN="LEFT">latitude / longitude</TD></TR><TR><TD ALIGN="LEFT">is_active</TD></TR>
+    </TABLE>>];
+
+  ITINERARY [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#FFE8CC"><B>ITINERARY</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> destination_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK</B> owner_id</TD></TR><TR><TD ALIGN="LEFT">title</TD></TR>
+      <TR><TD ALIGN="LEFT">description</TD></TR><TR><TD ALIGN="LEFT">start_date / end_date</TD></TR>
+      <TR><TD ALIGN="LEFT">budget / actual_spent</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR>
+      <TR><TD ALIGN="LEFT">is_public</TD></TR>
+    </TABLE>>];
+
+  COLLAB [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#FFF2CC"><B>COLLABORATION</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> itinerary_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK</B> user_id</TD></TR><TR><TD ALIGN="LEFT">role</TD></TR><TR><TD ALIGN="LEFT">invited_at</TD></TR>
+    </TABLE>>];
+
+  PREF [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#E8DFF5"><B>USER_PREFERENCE</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK UNIQUE</B> user_id</TD></TR>
+      <TR><TD ALIGN="LEFT">preferred_categories</TD></TR><TR><TD ALIGN="LEFT">preferred_climates</TD></TR>
+      <TR><TD ALIGN="LEFT">max_daily_budget</TD></TR>
+    </TABLE>>];
+
+  DAILY [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#FFE8CC"><B>DAILY_PLAN</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> itinerary_id</TD></TR>
+      <TR><TD ALIGN="LEFT">day_number</TD></TR><TR><TD ALIGN="LEFT">date</TD></TR><TR><TD ALIGN="LEFT">title</TD></TR>
+      <TR><TD ALIGN="LEFT">notes</TD></TR>
+    </TABLE>>];
+
+  ACCOM [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#DFF0D8"><B>ACCOMMODATION</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> destination_id</TD></TR>
+      <TR><TD ALIGN="LEFT">name</TD></TR><TR><TD ALIGN="LEFT">accommodation_type</TD></TR>
+      <TR><TD ALIGN="LEFT">price_per_night</TD></TR><TR><TD ALIGN="LEFT">max_guests</TD></TR>
+      <TR><TD ALIGN="LEFT">address / contact_email / contact_phone</TD></TR><TR><TD ALIGN="LEFT">image</TD></TR>
+      <TR><TD ALIGN="LEFT">is_available</TD></TR>
+    </TABLE>>];
+
+  ACTIVITY [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#DFF0D8"><B>ACTIVITY</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> destination_id</TD></TR>
+      <TR><TD ALIGN="LEFT">name</TD></TR><TR><TD ALIGN="LEFT">category</TD></TR>
+      <TR><TD ALIGN="LEFT">duration_hours</TD></TR><TR><TD ALIGN="LEFT">price</TD></TR>
+      <TR><TD ALIGN="LEFT">max_participants</TD></TR><TR><TD ALIGN="LEFT">image</TD></TR>
+      <TR><TD ALIGN="LEFT">is_available</TD></TR>
+    </TABLE>>];
+
+  BOOKING [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#F4CCCC"><B>BOOKING</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> user_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK</B> itinerary_id</TD></TR><TR><TD ALIGN="LEFT"><B>FK NULL</B> accommodation_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK NULL</B> activity_id</TD></TR><TR><TD ALIGN="LEFT">status</TD></TR>
+      <TR><TD ALIGN="LEFT">booking_date / quantity / price</TD></TR>
+    </TABLE>>];
+
+  BUDGET [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#EAD1DC"><B>BUDGET</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK UNIQUE</B> itinerary_id</TD></TR>
+      <TR><TD ALIGN="LEFT">accommodation_budget</TD></TR><TR><TD ALIGN="LEFT">activities_budget</TD></TR>
+      <TR><TD ALIGN="LEFT">food_budget</TD></TR><TR><TD ALIGN="LEFT">transport_budget</TD></TR>
+      <TR><TD ALIGN="LEFT">shopping_budget</TD></TR><TR><TD ALIGN="LEFT">miscellaneous_budget</TD></TR>
+    </TABLE>>];
+
+  EXPENSE [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#EAD1DC"><B>EXPENSE</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> itinerary_id</TD></TR>
+      <TR><TD ALIGN="LEFT">category</TD></TR><TR><TD ALIGN="LEFT">description</TD></TR>
+      <TR><TD ALIGN="LEFT">amount / date</TD></TR><TR><TD ALIGN="LEFT">receipt / notes</TD></TR>
+    </TABLE>>];
+
+  REVIEW [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#FCE5CD"><B>REVIEW</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> user_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK NULL</B> destination_id</TD></TR><TR><TD ALIGN="LEFT"><B>FK NULL</B> accommodation_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK NULL</B> activity_id</TD></TR><TR><TD ALIGN="LEFT">rating / title</TD></TR>
+      <TR><TD ALIGN="LEFT">content / visit_date</TD></TR><TR><TD ALIGN="LEFT">helpful_count</TD></TR>
+    </TABLE>>];
+
+  DOCUMENT [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#FFE8CC"><B>ITINERARY_DOCUMENT</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> itinerary_id</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>FK</B> uploaded_by_id</TD></TR><TR><TD ALIGN="LEFT">file</TD></TR>
+      <TR><TD ALIGN="LEFT">description / created_at</TD></TR>
+    </TABLE>>];
+
+  LOG [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD BGCOLOR="#D9D2E9"><B>ACTIVITY_LOG</B></TD></TR>
+      <TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT"><B>FK NULL</B> user_id</TD></TR>
+      <TR><TD ALIGN="LEFT">action</TD></TR><TR><TD ALIGN="LEFT">model_name / object_id</TD></TR>
+      <TR><TD ALIGN="LEFT">description / created_at</TD></TR>
+    </TABLE>>];
+
+  USER -> ITINERARY [label="owns"];
+  USER -> COLLAB [label="member"];
+  ITINERARY -> COLLAB [label="has"];
+  USER -> PREF [label="1:1"];
+  USER -> LOG [label="creates"];
+  USER -> DOCUMENT [label="uploads"];
+  DESTINATION -> PREF [label="saved by"];
+  DESTINATION -> ITINERARY [label="primary destination"];
+  ITINERARY -> DAILY [label="has"];
+  DAILY -> ACTIVITY [label="M:N"];
+  DESTINATION -> ACCOM [label="contains"];
+  DESTINATION -> ACTIVITY [label="contains"];
+  USER -> BOOKING [label="makes"];
+  ITINERARY -> BOOKING [label="contains"];
+  ACCOM -> BOOKING [label="target"];
+  ACTIVITY -> BOOKING [label="target"];
+  ITINERARY -> BUDGET [label="1:1"];
+  ITINERARY -> EXPENSE [label="records"];
+  USER -> REVIEW [label="writes"];
+  DESTINATION -> REVIEW [label="target"];
+  ACCOM -> REVIEW [label="target"];
+  ACTIVITY -> REVIEW [label="target"];
+  ITINERARY -> DOCUMENT [label="stores"];
+}
