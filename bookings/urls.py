@@ -1,12 +1,7 @@
 from django.urls import path
 
-from .views import BookingListCreateView
-
+app_name = "bookings"
 
 urlpatterns = [
-    path(
-        "bookings/",
-        BookingListCreateView.as_view(),
-        name="booking-list-create",
-    ),
+    # CRUD endpoints are registered through the main DefaultRouter.
 ]
