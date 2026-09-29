@@ -1,17 +1,19 @@
 from django.urls import path
 
-from .views import ReviewDetailView, ReviewListCreateView
+from .views import ReviewDetailView, ReviewListCreateView, ReviewStatsView
 
+app_name = "reviews"
 
 urlpatterns = [
+    path("", ReviewListCreateView.as_view(), name="review-list-create"),
     path(
-        "reviews/",
-        ReviewListCreateView.as_view(),
-        name="review-list-create",
-    ),
-    path(
-        "reviews/<int:pk>/",
+        "<int:pk>/",
         ReviewDetailView.as_view(),
         name="review-detail",
+    ),
+    path(
+        "stats/<int:destination_id>/",
+        ReviewStatsView.as_view(),
+        name="review-stats",
     ),
 ]
