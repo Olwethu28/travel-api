@@ -3,13 +3,10 @@ from rest_framework import serializers
 from .models import Budget, Expense
 
 
-class BudgetSerializer(
-    serializers.ModelSerializer
-):
-    """Serializer for itinerary budgets."""
+class BudgetSerializer(serializers.ModelSerializer):
+    """Budget representation with calculated total."""
 
     total_budget = serializers.ReadOnlyField()
-
     itinerary_title = serializers.CharField(
         source="itinerary.title",
         read_only=True,
@@ -17,7 +14,6 @@ class BudgetSerializer(
 
     class Meta:
         model = Budget
-
         fields = [
             "id",
             "itinerary",
@@ -32,7 +28,6 @@ class BudgetSerializer(
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
             "itinerary_title",
@@ -42,9 +37,7 @@ class BudgetSerializer(
         ]
 
     def validate(self, data):
-        """Validate budget values."""
-
-        budget_fields = [
+        fields = [
             "accommodation_budget",
             "activities_budget",
             "food_budget",
@@ -52,31 +45,20 @@ class BudgetSerializer(
             "shopping_budget",
             "miscellaneous_budget",
         ]
-
-        for field in budget_fields:
+        for field in fields:
             value = data.get(field)
-
             if value is not None and value < 0:
                 raise serializers.ValidationError(
-                    {
-                        field:
-                        "Budget amount cannot be negative."
-                    }
+                    {field: "Budget amount cannot be negative."}
                 )
-
         return data
 
     def create(self, validated_data):
-        """Create a budget."""
-        return Budget.objects.create(
-            **validated_data
-        )
+        return Budget.objects.create(**validated_data)
 
 
-class ExpenseSerializer(
-    serializers.ModelSerializer
-):
-    """Serializer for individual expenses."""
+class ExpenseSerializer(serializers.ModelSerializer):
+    """Serializer for individual trip expenses."""
 
     itinerary_title = serializers.CharField(
         source="itinerary.title",
@@ -85,7 +67,6 @@ class ExpenseSerializer(
 
     class Meta:
         model = Expense
-
         fields = [
             "id",
             "itinerary",
@@ -98,7 +79,6 @@ class ExpenseSerializer(
             "notes",
             "created_at",
         ]
-
         read_only_fields = [
             "id",
             "itinerary_title",
@@ -106,31 +86,26 @@ class ExpenseSerializer(
         ]
 
     def validate_amount(self, value):
-        """Ensure expense amount is positive."""
         if value < 0:
             raise serializers.ValidationError(
                 "Expense amount cannot be negative."
             )
-
         return value
 
-    def validate(self, data):
-        """Validate expense description."""
-        description = data.get("description")
-
-        if description and not description.strip():
+    def validate_description(self, value):
+        if not value.strip():
             raise serializers.ValidationError(
-                {
-                    "description":
-                    "Description cannot be empty."
-                }
+                "Description cannot be empty."
             )
+        return value.strip()
 
+    def validate(self, data):
+        itinerary = data.get("itinerary")
+        if itinerary and itinerary.owner_id != self.context["request"].user.id:
+            raise serializers.ValidationError(
+                {"itinerary": "You can only manage expenses on your own trips."}
+            )
         return data
 
     def update(self, instance, validated_data):
-        """Update an expense."""
-        return super().update(
-            instance,
-            validated_data,
-        )
+        return super().update(instance, validated_data)
