@@ -422,8 +422,8 @@ Example request:
 
 ```json
 {
-  "username": "alex",
-  "email": "alex@example.com",
+  "username": "olwethu",
+  "email": "olwethu@example.com",
   "password": "StrongPass123!",
   "password_confirm": "StrongPass123!"
 }
@@ -631,8 +631,8 @@ python manage.py spectacular --validate --file schema.yml
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Olwethu28/enye-travel-api.git
-cd enye-travel-api
+git clone https://github.com/Olwethu28/travel-api.git
+cd travel-api
 ```
 
 ### 2. Create and Activate a Virtual Environment
