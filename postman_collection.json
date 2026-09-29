@@ -1,0 +1,59 @@
+{
+  "info": {
+    "name": "Travel Itinerary Planning & Booking API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://127.0.0.1:8000"},
+    {"key": "accessToken", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/api/v1/accounts/register/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"olwethu\",\"email\":\"olwethu@example.com\",\"password\":\"StrongPass123!\",\"password_confirm\":\"StrongPass123!\"}"
+        }
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/api/v1/accounts/login/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"olwethu\",\"password\":\"StrongPass123!\"}"
+        }
+      }
+    },
+    {
+      "name": "Destinations",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/destinations/?search=cape&ordering=name"
+      }
+    },
+    {
+      "name": "Itineraries",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+        "url": "{{baseUrl}}/api/v1/itineraries/"
+      }
+    },
+    {
+      "name": "Bookings",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+        "url": "{{baseUrl}}/api/v1/bookings/"
+      }
+    }
+  ]
+}
