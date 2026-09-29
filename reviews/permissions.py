@@ -2,19 +2,14 @@ from rest_framework import permissions
 
 
 class IsReviewOwnerOrReadOnly(permissions.BasePermission):
-    """
-    Anyone can view reviews.
-    Only the review owner can edit or delete it.
-    """
+    """Allow public reads and only owners to change reviews."""
 
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-
-        return request.user and request.user.is_authenticated
+        return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-
-        return obj.user == request.user
+        return obj.user_id == request.user.id
