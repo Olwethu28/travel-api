@@ -1,23 +1,16 @@
 from rest_framework import serializers
 
 from destinations.models import Destination
-from .models import (
-    Itinerary,
-    DailyPlan,
-    Collaboration,
-)
+from .models import Collaboration, DailyPlan, Itinerary, ItineraryDocument
 
 
-class CollaborationSerializer(
-    serializers.ModelSerializer
-):
+class CollaborationSerializer(serializers.ModelSerializer):
     """Serializer for itinerary collaborators."""
 
     username = serializers.CharField(
         source="user.username",
         read_only=True,
     )
-
     email = serializers.EmailField(
         source="user.email",
         read_only=True,
@@ -33,29 +26,28 @@ class CollaborationSerializer(
             "role",
             "invited_at",
         ]
-
-        read_only_fields = [
-            "id",
-            "invited_at",
-        ]
+        read_only_fields = ["id", "username", "email", "invited_at"]
 
     def validate(self, data):
-        """Validate collaboration data."""
-        itinerary = data.get("itinerary")
-        user = data.get("user")
-
-        if itinerary and itinerary.owner == user:
+        itinerary = data.get("itinerary") or getattr(
+            self.instance,
+            "itinerary",
+            None,
+        )
+        user = data.get("user") or getattr(
+            self.instance,
+            "user",
+            None,
+        )
+        if itinerary and user and itinerary.owner_id == user.id:
             raise serializers.ValidationError(
-                "The itinerary owner cannot be added as a collaborator."
+                "The itinerary owner cannot be a collaborator."
             )
-
         return data
 
 
-class DailyPlanSerializer(
-    serializers.ModelSerializer
-):
-    """Daily itinerary plan with computed information."""
+class DailyPlanSerializer(serializers.ModelSerializer):
+    """Day plan with a computed activity count."""
 
     activities_count = serializers.SerializerMethodField()
 
@@ -73,45 +65,53 @@ class DailyPlanSerializer(
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
+            "activities_count",
             "created_at",
             "updated_at",
-            "activities_count",
         ]
 
     def get_activities_count(self, obj):
-        return obj.activities.count()
+        return getattr(
+            obj,
+            "annotated_activity_count",
+            obj.activities.count(),
+        )
 
     def validate_day_number(self, value):
-        """Ensure day number is positive."""
         if value < 1:
             raise serializers.ValidationError(
                 "Day number must be at least 1."
             )
-
         return value
 
+    def validate(self, data):
+        itinerary = data.get("itinerary")
+        date = data.get("date")
+        if itinerary and date and not (
+            itinerary.start_date <= date <= itinerary.end_date
+        ):
+            raise serializers.ValidationError(
+                {"date": "Date must fall within the itinerary dates."}
+            )
+        return data
 
-class ItineraryListSerializer(
-    serializers.ModelSerializer
-):
+
+class ItineraryListSerializer(serializers.ModelSerializer):
     """Lightweight itinerary representation."""
 
     destination_name = serializers.CharField(
         source="destination.name",
         read_only=True,
     )
-
     owner_username = serializers.CharField(
         source="owner.username",
         read_only=True,
     )
-
     duration_days = serializers.ReadOnlyField()
-
     budget_remaining = serializers.ReadOnlyField()
+    total_bookings = serializers.SerializerMethodField()
 
     class Meta:
         model = Itinerary
@@ -126,205 +126,201 @@ class ItineraryListSerializer(
             "end_date",
             "duration_days",
             "budget",
-            "budget_remaining",
-            "status",
-            "is_public",
-        ]
-
-        read_only_fields = [
-            "id",
-            "owner",
-            "duration_days",
-            "budget_remaining",
-        ]
-
-
-class ItineraryDetailSerializer(
-    serializers.ModelSerializer
-):
-    """Detailed itinerary with nested relationships."""
-
-    destination = serializers.SerializerMethodField()
-
-    daily_plans = DailyPlanSerializer(
-        many=True,
-        read_only=True,
-    )
-
-    collaborations = CollaborationSerializer(
-        many=True,
-        read_only=True,
-    )
-
-    bookings_count = serializers.SerializerMethodField()
-
-    expenses_count = serializers.SerializerMethodField()
-
-    duration_days = serializers.ReadOnlyField()
-
-    budget_remaining = serializers.ReadOnlyField()
-
-    class Meta:
-        model = Itinerary
-
-        fields = [
-            "id",
-            "title",
-            "description",
-            "destination",
-            "owner",
-            "daily_plans",
-            "collaborations",
-            "bookings_count",
-            "expenses_count",
-            "start_date",
-            "end_date",
-            "duration_days",
-            "budget",
             "actual_spent",
             "budget_remaining",
             "status",
             "is_public",
-            "created_at",
-            "updated_at",
+            "total_bookings",
         ]
-
         read_only_fields = [
             "id",
             "owner",
+            "owner_username",
+            "duration_days",
+            "budget_remaining",
+            "total_bookings",
+        ]
+
+    def get_total_bookings(self, obj):
+        return getattr(
+            obj,
+            "annotated_booking_count",
+            obj.bookings.count(),
+        )
+
+
+class ItineraryDetailSerializer(ItineraryListSerializer):
+    """Detailed itinerary with nested plans and collaborations."""
+
+    daily_plans = DailyPlanSerializer(many=True, read_only=True)
+    collaborations = CollaborationSerializer(
+        many=True,
+        read_only=True,
+    )
+    bookings_count = serializers.SerializerMethodField()
+    expenses_count = serializers.SerializerMethodField()
+    destination_summary = serializers.SerializerMethodField()
+
+    class Meta(ItineraryListSerializer.Meta):
+        fields = ItineraryListSerializer.Meta.fields + [
+            "description",
             "daily_plans",
             "collaborations",
             "bookings_count",
             "expenses_count",
-            "duration_days",
-            "budget_remaining",
+            "destination_summary",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ItineraryListSerializer.Meta.read_only_fields + [
+            "daily_plans",
+            "collaborations",
+            "bookings_count",
+            "expenses_count",
+            "destination_summary",
             "created_at",
             "updated_at",
         ]
 
-    def get_destination(self, obj):
+    def get_bookings_count(self, obj):
+        return getattr(
+            obj,
+            "annotated_booking_count",
+            obj.bookings.count(),
+        )
+
+    def get_expenses_count(self, obj):
+        return getattr(
+            obj,
+            "annotated_expense_count",
+            obj.expenses.count(),
+        )
+
+    def get_destination_summary(self, obj):
         return {
-            "id": obj.destination.id,
+            "id": obj.destination_id,
             "name": obj.destination.name,
             "country": obj.destination.country,
             "category": obj.destination.category,
-            "climate": obj.destination.climate,
         }
 
-    def get_bookings_count(self, obj):
-        return obj.bookings.count()
-
-    def get_expenses_count(self, obj):
-        return obj.expenses.count()
-
-    def validate(self, data):
-        """Validate itinerary dates and budget."""
-
-        start_date = data.get("start_date")
-        end_date = data.get("end_date")
-        budget = data.get("budget")
-
-        if start_date and end_date:
-            if end_date < start_date:
-                raise serializers.ValidationError(
-                    {
-                        "end_date":
-                        "End date must be after start date."
-                    }
-                )
-
-        if budget is not None and budget < 0:
-            raise serializers.ValidationError(
-                {
-                    "budget":
-                    "Budget cannot be negative."
-                }
-            )
-
-        return data
-
-    def create(self, validated_data):
-        """Create itinerary and its budget."""
-
-        itinerary = Itinerary.objects.create(
-            **validated_data
-        )
-
-        from budgets.models import Budget
-
-        Budget.objects.create(
-            itinerary=itinerary
-        )
-
-        return itinerary
-
     def to_representation(self, instance):
-        """Customize itinerary output."""
-        representation = super().to_representation(
-            instance
-        )
-
+        representation = super().to_representation(instance)
         representation["budget_status"] = (
             "within_budget"
             if instance.budget_remaining >= 0
             else "over_budget"
         )
-
         return representation
 
 
-class ItineraryCreateUpdateSerializer(
-    serializers.ModelSerializer
-):
-    """Serializer for creating and updating itineraries."""
+class ItineraryCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating itineraries."""
 
-    destination_id = serializers.PrimaryKeyRelatedField(
+    destination = serializers.PrimaryKeyRelatedField(
         queryset=Destination.objects.all(),
-        source="destination",
+        help_text="Destination primary key.",
     )
 
     class Meta:
         model = Itinerary
-
         fields = [
-          "title",
-          "description",
-          "destination_id",
-          "start_date",
-          "end_date",
-          "budget",
-          "status",
-          "is_public",
+            "title",
+            "description",
+            "destination",
+            "start_date",
+            "end_date",
+            "budget",
+            "status",
+            "is_public",
         ]
 
     def validate(self, data):
-        """Validate itinerary dates."""
-        start_date = data.get("start_date")
-        end_date = data.get("end_date")
-
-        if start_date and end_date:
-            if end_date < start_date:
-                raise serializers.ValidationError(
-                    {
-                        "end_date":
-                        "End date must be after start date."
-                    }
-                )
-
+        if data["end_date"] < data["start_date"]:
+            raise serializers.ValidationError(
+                {"end_date": "End date must be after start date."}
+            )
+        if data["budget"] <= 0:
+            raise serializers.ValidationError(
+                {"budget": "Budget must be greater than zero."}
+            )
         return data
 
-    def validate_budget(self, value):
-        """Ensure budget is greater than zero."""
-        if value <= 0:
-            raise serializers.ValidationError(
-                "Budget must be greater than zero."
-            )
+    def create(self, validated_data):
+        from budgets.models import Budget
 
-        return value
+        itinerary = Itinerary.objects.create(
+            owner=self.context["request"].user,
+            **validated_data,
+        )
+        Budget.objects.get_or_create(itinerary=itinerary)
+        return itinerary
+
+
+class ItineraryUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for owner/editor itinerary updates."""
+
+    class Meta:
+        model = Itinerary
+        fields = [
+            "title",
+            "description",
+            "destination",
+            "start_date",
+            "end_date",
+            "budget",
+            "actual_spent",
+            "status",
+            "is_public",
+        ]
+
+    def validate(self, data):
+        start = data.get(
+            "start_date",
+            getattr(self.instance, "start_date", None),
+        )
+        end = data.get(
+            "end_date",
+            getattr(self.instance, "end_date", None),
+        )
+        if start and end and end < start:
+            raise serializers.ValidationError(
+                {"end_date": "End date must be after start date."}
+            )
+        return data
 
     def update(self, instance, validated_data):
-        """Update an itinerary."""
-        return super().update(
-            instance,
-            validated_data,
+        return super().update(instance, validated_data)
+
+
+class ItineraryDocumentSerializer(serializers.ModelSerializer):
+    """Serializer for itinerary PDF uploads."""
+
+    uploaded_by_username = serializers.CharField(
+        source="uploaded_by.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ItineraryDocument
+        fields = [
+            "id",
+            "itinerary",
+            "file",
+            "description",
+            "uploaded_by",
+            "uploaded_by_username",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "uploaded_by",
+            "uploaded_by_username",
+            "created_at",
+        ]
+
+    def create(self, validated_data):
+        return ItineraryDocument.objects.create(
+            uploaded_by=self.context["request"].user,
+            **validated_data,
         )
