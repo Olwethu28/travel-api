@@ -1,20 +1,7 @@
 from django.urls import path
 
-from .views import (
-    BudgetListCreateView,
-    ExpenseListCreateView,
-)
-
+app_name = "budgets"
 
 urlpatterns = [
-    path(
-        "budgets/",
-        BudgetListCreateView.as_view(),
-        name="budget-list-create",
-    ),
-    path(
-        "expenses/",
-        ExpenseListCreateView.as_view(),
-        name="expense-list-create",
-    ),
+    # Budget and expense CRUD endpoints are registered through the router.
 ]
