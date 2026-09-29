@@ -1,27 +1,19 @@
 from rest_framework import serializers
 
-from .models import (
-    Accommodation,
-    Activity,
-    Booking,
-)
+from .models import Accommodation, Activity, Booking
 
 
-class AccommodationSerializer(
-    serializers.ModelSerializer
-):
-    """Serializer for accommodation."""
+class AccommodationSerializer(serializers.ModelSerializer):
+    """Accommodation list/detail representation."""
 
     destination_name = serializers.CharField(
         source="destination.name",
         read_only=True,
     )
-
     booking_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Accommodation
-
         fields = [
             "id",
             "name",
@@ -40,7 +32,6 @@ class AccommodationSerializer(
             "booking_count",
             "created_at",
         ]
-
         read_only_fields = [
             "id",
             "destination_name",
@@ -49,56 +40,45 @@ class AccommodationSerializer(
         ]
 
     def get_booking_count(self, obj):
-        return obj.bookings.count()
+        return getattr(
+            obj,
+            "annotated_booking_count",
+            obj.bookings.count(),
+        )
+
+    def validate_max_guests(self, value):
+        if value < 1:
+            raise serializers.ValidationError(
+                "Maximum guests must be at least one."
+            )
+        return value
 
     def validate_price_per_night(self, value):
-        """Ensure accommodation price is positive."""
         if value < 0:
             raise serializers.ValidationError(
                 "Price cannot be negative."
             )
-
-        return value
-
-    def validate_max_guests(self, value):
-        """Ensure at least one guest is allowed."""
-        if value < 1:
-            raise serializers.ValidationError(
-                "Maximum guests must be at least 1."
-            )
-
         return value
 
     def to_representation(self, instance):
-        """Customize accommodation response."""
-        representation = super().to_representation(
-            instance
+        data = super().to_representation(instance)
+        data["availability"] = (
+            "available" if instance.is_available else "unavailable"
         )
-
-        representation["availability"] = (
-            "available"
-            if instance.is_available
-            else "unavailable"
-        )
-
-        return representation
+        return data
 
 
-class ActivitySerializer(
-    serializers.ModelSerializer
-):
-    """Serializer for activities."""
+class ActivitySerializer(serializers.ModelSerializer):
+    """Activity list/detail representation."""
 
     destination_name = serializers.CharField(
         source="destination.name",
         read_only=True,
     )
-
     booking_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Activity
-
         fields = [
             "id",
             "name",
@@ -115,7 +95,6 @@ class ActivitySerializer(
             "booking_count",
             "created_at",
         ]
-
         read_only_fields = [
             "id",
             "destination_name",
@@ -124,45 +103,39 @@ class ActivitySerializer(
         ]
 
     def get_booking_count(self, obj):
-        return obj.bookings.count()
+        return getattr(
+            obj,
+            "annotated_booking_count",
+            obj.bookings.count(),
+        )
 
     def validate_duration_hours(self, value):
-        """Validate activity duration."""
         if value <= 0:
             raise serializers.ValidationError(
                 "Duration must be greater than zero."
             )
-
         return value
 
 
-class BookingSerializer(
-    serializers.ModelSerializer
-):
-    """Detailed booking serializer."""
+class BookingSerializer(serializers.ModelSerializer):
+    """Detailed booking serializer with nested target data."""
 
     user_username = serializers.CharField(
         source="user.username",
         read_only=True,
     )
-
-    accommodation_details = (
-        AccommodationSerializer(
-            source="accommodation",
-            read_only=True,
-        )
+    accommodation_details = AccommodationSerializer(
+        source="accommodation",
+        read_only=True,
     )
-
     activity_details = ActivitySerializer(
         source="activity",
         read_only=True,
     )
-
     booking_target = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
-
         fields = [
             "id",
             "user",
@@ -180,7 +153,6 @@ class BookingSerializer(
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
             "user",
@@ -193,61 +165,41 @@ class BookingSerializer(
         ]
 
     def get_booking_target(self, obj):
-        if obj.accommodation:
-            return {
-                "type": "accommodation",
-                "id": obj.accommodation.id,
-                "name": obj.accommodation.name,
-            }
-
-        if obj.activity:
-            return {
-                "type": "activity",
-                "id": obj.activity.id,
-                "name": obj.activity.name,
-            }
-
-        return None
+        target = obj.accommodation or obj.activity
+        if not target:
+            return None
+        return {
+            "type": "accommodation"
+            if obj.accommodation_id
+            else "activity",
+            "id": target.id,
+            "name": target.name,
+        }
 
     def validate(self, data):
-        """Ensure exactly one booking target exists."""
-
-        accommodation = data.get("accommodation")
-        activity = data.get("activity")
-
-        if not accommodation and not activity:
+        if bool(data.get("accommodation")) == bool(data.get("activity")):
             raise serializers.ValidationError(
-                "Booking must have an accommodation or activity."
+                "Choose exactly one accommodation or activity."
             )
-
-        if accommodation and activity:
+        quantity = data.get("quantity", 1)
+        if quantity < 1:
             raise serializers.ValidationError(
-                "Booking cannot have both accommodation and activity."
+                {"quantity": "Quantity must be at least one."}
             )
-
         return data
 
     def create(self, validated_data):
-        """Create a booking for the authenticated user."""
-
-        request = self.context.get("request")
-
-        if request and request.user.is_authenticated:
-            validated_data["user"] = request.user
-
         return Booking.objects.create(
-            **validated_data
+            user=self.context["request"].user,
+            **validated_data,
         )
 
 
-class BookingCreateSerializer(
-    serializers.ModelSerializer
-):
-    """Serializer specifically for creating bookings."""
+class BookingCreateSerializer(serializers.ModelSerializer):
+    """Write serializer for new bookings."""
 
     class Meta:
         model = Booking
-
         fields = [
             "itinerary",
             "accommodation",
@@ -258,13 +210,34 @@ class BookingCreateSerializer(
         ]
 
     def validate(self, data):
-        """Validate booking target."""
-
-        if bool(data.get("accommodation")) == bool(
-            data.get("activity")
-        ):
+        if bool(data.get("accommodation")) == bool(data.get("activity")):
             raise serializers.ValidationError(
-                "Choose exactly one: accommodation or activity."
+                "Choose exactly one booking target."
             )
-
+        itinerary = data["itinerary"]
+        if itinerary.owner_id != self.context["request"].user.id:
+            raise serializers.ValidationError(
+                {"itinerary": "You can only book on your own itinerary."}
+            )
         return data
+
+    def create(self, validated_data):
+        return Booking.objects.create(
+            user=self.context["request"].user,
+            **validated_data,
+        )
+
+
+class BookingUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for booking status and quantity changes."""
+
+    class Meta:
+        model = Booking
+        fields = ["status", "booking_date", "quantity", "price"]
+
+    def validate_quantity(self, value):
+        if value < 1:
+            raise serializers.ValidationError(
+                "Quantity must be at least one."
+            )
+        return value
