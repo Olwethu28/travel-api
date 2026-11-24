@@ -1,5 +1,5 @@
 from decimal import Decimal
-
+from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import (
     Avg,
@@ -296,25 +296,30 @@ class DailyPlanListCreateView(generics.ListCreateAPIView):
     serializer_class = DailyPlanSerializer
 
     def get_queryset(self):
+        itinerary = self.get_parent_itinerary()
         return (
-            DailyPlan.objects.filter(
-                itinerary_id=self.kwargs["itinerary_id"]
-            )
+            DailyPlan.objects.filter(itinerary=itinerary)
             .select_related("itinerary")
             .prefetch_related("activities")
-        )
+            )
 
     def perform_create(self, serializer):
-        itinerary = Itinerary.objects.get(
-            pk=self.kwargs["itinerary_id"]
-        )
+        itinerary = self.get_parent_itinerary()
+        
         if not itinerary.can_edit(self.request.user):
             from rest_framework.exceptions import PermissionDenied
-
             raise PermissionDenied(
                 "Only the owner or editor/admin collaborator can add plans."
-            )
+                )
         serializer.save(itinerary=itinerary)
+
+    def get_parent_itinerary(self):
+        itinerary = get_object_or_404(
+            Itinerary,
+            pk=self.kwargs["itinerary_id"],
+            )
+        self.check_object_permissions(self.request, itinerary)
+        return itinerary
 
 
 class DailyPlanDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -348,31 +353,40 @@ class ItineraryDocumentListCreateView(generics.ListCreateAPIView):
     serializer_class = ItineraryDocumentSerializer
 
     def get_queryset(self):
+        itinerary = self.get_parent_itinerary()
         return (
-            ItineraryDocument.objects.filter(
-                itinerary_id=self.kwargs["itinerary_id"]
-            )
+            ItineraryDocument.objects.filter(itinerary=itinerary)
             .select_related("itinerary", "uploaded_by")
-        )
+            )
 
     def perform_create(self, serializer):
-        itinerary = Itinerary.objects.get(
-            pk=self.kwargs["itinerary_id"]
-        )
+        itinerary = self.get_parent_itinerary()
         if not itinerary.can_edit(self.request.user):
             from rest_framework.exceptions import PermissionDenied
-
             raise PermissionDenied(
                 "Only editors can upload itinerary documents."
+                )
+
+        document = serializer.save(
+            itinerary=itinerary,
+            uploaded_by=self.request.user,
             )
-        document = serializer.save(itinerary=itinerary)
+
         ActivityLog.objects.create(
             user=self.request.user,
             action=ActivityLog.ActionChoices.UPLOAD,
             model_name="ItineraryDocument",
             object_id=document.pk,
             description="Uploaded an itinerary PDF.",
-        )
+            )
+
+    def get_parent_itinerary(self):
+        itinerary = get_object_or_404(
+            Itinerary,
+            pk=self.kwargs["itinerary_id"],
+            )
+        self.check_object_permissions(self.request, itinerary)
+        return itinerary
 
 
 class ItineraryViewSet(viewsets.ModelViewSet):

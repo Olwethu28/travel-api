@@ -221,12 +221,6 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def create(self, validated_data):
-        return Booking.objects.create(
-            user=self.context["request"].user,
-            **validated_data,
-        )
-
 
 class BookingUpdateSerializer(serializers.ModelSerializer):
     """Serializer for booking status and quantity changes."""

@@ -67,6 +67,7 @@ class DailyPlanSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "itinerary",
             "activities_count",
             "created_at",
             "updated_at",
@@ -314,6 +315,7 @@ class ItineraryDocumentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "itinerary",
             "uploaded_by",
             "uploaded_by_username",
             "created_at",

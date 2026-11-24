@@ -71,12 +71,6 @@ class ReviewSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def create(self, validated_data):
-        return Review.objects.create(
-            user=self.context["request"].user,
-            **validated_data,
-        )
-
 
 class ReviewListSerializer(ReviewSerializer):
     """Compact review representation."""
