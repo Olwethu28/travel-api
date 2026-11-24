@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../travel-itinerary-api-complete-with-erd/venv"
+		}
+	],
+	"settings": {}
+}
