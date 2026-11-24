@@ -1,3 +1,4 @@
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -14,12 +15,12 @@ from bookings.views import (
     ActivityViewSet,
     BookingViewSet,
 )
+from budgets.views import BudgetViewSet, ExpenseViewSet
 from destinations.views import DestinationViewSet
 from itineraries.views import (
     ItineraryViewSet,
     TripAnalyticsViewSet,
 )
-from budgets.views import BudgetViewSet, ExpenseViewSet
 
 router = DefaultRouter()
 router.register(
@@ -65,7 +66,8 @@ router.register(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/", include(router.urls)),
+
+    # Specific application URLs must come before router detail routes.
     path(
         "api/v1/accounts/",
         include(("accounts.urls", "accounts"), namespace="accounts"),
@@ -86,10 +88,7 @@ urlpatterns = [
     ),
     path(
         "api/v1/bookings/",
-        include(
-            ("bookings.urls", "bookings"),
-            namespace="bookings",
-        ),
+        include(("bookings.urls", "bookings"), namespace="bookings"),
     ),
     path(
         "api/v1/reviews/",
@@ -99,6 +98,11 @@ urlpatterns = [
         "api/v1/budgets/",
         include(("budgets.urls", "budgets"), namespace="budgets"),
     ),
+
+    # General ViewSet routes come after specific application routes.
+    path("api/v1/", include(router.urls)),
+
+    # API documentation.
     path(
         "api/schema/",
         SpectacularAPIView.as_view(),

@@ -134,36 +134,29 @@ http://127.0.0.1:8000/api/v1/
 
 ## Authentication
 
-The API uses JWT authentication.
+The API uses JSON Web Tokens (JWT) for authentication.
 
-Register:
+### Authentication endpoints
 
-```http
-POST /api/v1/accounts/register/
-```
+| Purpose | Method | Endpoint |
+|---|---|---|
+| Register | POST | `/api/v1/accounts/register/` |
+| Login | POST | `/api/v1/accounts/login/` |
+| Refresh access token | POST | `/api/v1/accounts/token/refresh/` |
+| View profile | GET | `/api/v1/accounts/profile/` |
+| Change password | POST | `/api/v1/accounts/password/change/` |
+| Request password reset | POST | `/api/v1/accounts/password/reset/` |
+| Confirm password reset | POST | `/api/v1/accounts/password/reset/confirm/` |
+| Manage preferences | GET/PUT/PATCH | `/api/v1/accounts/preferences/` |
+| View audit logs | GET | `/api/v1/accounts/audit-logs/` |
 
-Login:
-
-```http
-POST /api/v1/accounts/login/
-```
-
-Token endpoints:
-
-```http
-POST /api/v1/token/
-POST /api/v1/token/refresh/
-POST /api/v1/token/verify/
-```
-
-Authenticated requests use:
+Authenticated requests must include the access token in the Authorization header:
 
 ```http
 Authorization: Bearer <access-token>
 ```
 
 Object-level permissions protect resources such as itineraries, bookings and reviews. Collaboration roles include viewer, editor and administrator access.
-
 ## Main API Endpoints
 
 | Resource       | Base Endpoint             |
