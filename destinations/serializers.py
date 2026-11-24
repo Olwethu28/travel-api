@@ -30,18 +30,15 @@ class DestinationListSerializer(serializers.ModelSerializer):
         ]
 
     def get_average_rating(self, obj):
-        return getattr(
-            obj,
-            "annotated_average_rating",
-            obj.average_rating,
-        ) or 0
+        if hasattr(obj, "annotated_average_rating"):
+            return obj.annotated_average_rating or 0
+        return obj.average_rating
+
 
     def get_review_count(self, obj):
-        return getattr(
-            obj,
-            "annotated_review_count",
-            obj.review_count(),
-        )
+        if hasattr(obj, "annotated_review_count"):
+            return obj.annotated_review_count
+        return obj.review_count()
 
 
 class DestinationDetailSerializer(DestinationListSerializer):
@@ -86,18 +83,15 @@ class DestinationDetailSerializer(DestinationListSerializer):
         ]
 
     def get_accommodation_count(self, obj):
-        return getattr(
-            obj,
-            "annotated_accommodation_count",
-            obj.accommodations.count(),
-        )
+        if hasattr(obj, "annotated_accommodation_count"):
+            return obj.annotated_accommodation_count
+        return obj.accommodations.count()
+
 
     def get_activity_count(self, obj):
-        return getattr(
-            obj,
-            "annotated_activity_count",
-            obj.activities.count(),
-        )
+        if hasattr(obj, "annotated_activity_count"):
+            return obj.annotated_activity_count
+        return obj.activities.count()
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
